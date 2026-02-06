@@ -106,7 +106,9 @@ export default function RatingCalculator({ rating, property }) {
           <div>
             <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Rating Factors</h3>
             <div className="space-y-3">
-              <FactorRow label="Base Rate (per $100 TIV)" value={`$${rating.base_rate_per_100.toFixed(2)}`} />
+              <FactorRow label="ISO Loss Cost (per $100)" value={`$${rating.loss_cost_per_100.toFixed(3)}`} />
+              <FactorRow label="Loss Cost Multiplier" value={`${rating.lcm.toFixed(2)}x`} />
+              <FactorRow label="Final Rate (per $100 TIV)" value={`$${rating.base_rate_per_100.toFixed(3)}`} />
               <FactorRow label="Sprinklered" value={rating.sprinklered ? 'Yes' : 'No'} />
               <FactorRow label="Building Age Factor" value={`${rating.age_factor.toFixed(2)}x`} />
               <FactorRow label="Stories Factor" value={`${rating.stories_factor.toFixed(2)}x`} />

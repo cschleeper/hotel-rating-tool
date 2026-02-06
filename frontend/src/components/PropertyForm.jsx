@@ -49,6 +49,20 @@ function ConfidenceBadge({ level }) {
   );
 }
 
+function DataSourceBadges({ sources }) {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {sources.map((src) => (
+        <span key={src} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          {src}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function PropertyForm({ property, onChange, onCalculate, onClear, isCalculating }) {
   const updateField = (field, value) => {
     onChange({ ...property, [field]: value });
@@ -72,7 +86,10 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
           </svg>
           <h2 className="text-lg font-semibold text-navy-800">Property Details</h2>
         </div>
-        <ConfidenceBadge level={property.confidence_level} />
+        <div className="flex items-center gap-2">
+          <ConfidenceBadge level={property.confidence_level} />
+          <DataSourceBadges sources={property.data_sources} />
+        </div>
       </div>
 
       {/* Property Info - Two Column Grid */}

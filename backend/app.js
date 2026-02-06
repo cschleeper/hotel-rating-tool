@@ -61,31 +61,40 @@ app.post('/api/property-lookup', async (req, res) => {
         {
           type: 'web_search_20250305',
           name: 'web_search',
-          max_uses: 5,
+          max_uses: 10,
         },
       ],
       messages: [
         {
           role: 'user',
-          content: `You are a property data extraction assistant. Given a hotel name and/or address, search for information and return structured JSON.
+          content: `You are a property data extraction assistant specializing in commercial real estate. Given a hotel name and/or address, search for information and return structured JSON.
 
 Hotel to look up: "${query}"
 
-Search for this hotel and return a JSON object with these fields:
+IMPORTANT — Search strategy:
+1. First, search LoopNet for this property (e.g. "site:loopnet.com ${query}"). LoopNet listings have the most reliable building data: square footage, year built, stories, lot size, and construction details.
+2. Also search CoStar, CREXi, and commercial real estate listing sites for additional property details.
+3. Search the hotel brand's website and travel sites (TripAdvisor, Booking.com) for room count, amenities, and photos.
+4. Search county property appraiser / tax assessor records for year built, square footage, and construction type if available.
+5. Use Google Maps / street view results for exterior photos.
+
+Return a JSON object with these fields:
 
 - property_name (string)
 - full_address (string)
 - brand (string, e.g. "Marriott", "Hilton", "Independent")
 - room_count (number)
-- stories (number — your best estimate from search results)
-- year_built (number)
-- construction_type (string — your best guess from brand standards and age: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", or "Frame")
-- square_footage (number — estimate if not found: rooms × 500-600 SF for limited-service, rooms × 700-900 SF for full-service)
+- stories (number — from LoopNet/CRE listings if available, otherwise best estimate)
+- year_built (number — from LoopNet/tax records if available)
+- construction_type (string — from LoopNet/CRE data if available, otherwise estimate from brand standards and age: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", or "Frame")
+- square_footage (number — from LoopNet/tax records if available, otherwise estimate: rooms × 500-600 SF for limited-service, rooms × 700-900 SF for full-service)
+- lot_size (number or null — lot size in acres if found on LoopNet or tax records)
 - sprinklered (boolean — assume true for hotels built after 1990 or major brands)
 - state (string — two-letter US state abbreviation)
 - amenities (object with boolean fields: pool, restaurant, fitness_center, spa, business_center, meeting_space)
-- confidence_level (string: "high", "medium", or "low")
-- image_urls (array of strings — include up to 5 URLs of exterior photos of the building you found during search. Look for images showing the full building exterior, facade, entrance, or aerial views. These will be analyzed to verify construction type and story count.)
+- confidence_level (string: "high" if key data from LoopNet/tax records, "medium" if from brand/travel sites, "low" if mostly estimated)
+- data_sources (array of strings — list which sources you actually found data on, e.g. ["LoopNet", "TripAdvisor", "Marriott.com"])
+- image_urls (array of strings — include up to 5 URLs of exterior photos of the building you found during search. Prioritize LoopNet listing photos, Google Maps street view, and hotel website exterior shots. These will be analyzed to verify construction type and story count.)
 
 Return ONLY valid JSON. No markdown, no code blocks.`,
         },
@@ -237,10 +246,12 @@ function calculateInsuranceRating(property) {
   const buildingAge = currentYear - (year_built || 2000);
 
   // --- Base rate from config (sprinklered vs non-sprinklered) ---
+  // Loss cost × LCM = final rate
   const rateTable = sprinklered
     ? config.baseRatesPer100.sprinklered
     : config.baseRatesPer100.nonSprinklered;
-  const baseRatePer100 = rateTable[construction_type] || config.defaultBaseRate;
+  const lossCostPer100 = rateTable[construction_type] || config.defaultBaseRate;
+  const baseRatePer100 = lossCostPer100 * config.lossCostMultiplier;
 
   // --- TIV calculation from config ---
   const buildingCostPerSF =
@@ -299,6 +310,8 @@ function calculateInsuranceRating(property) {
     total_insurable_value: totalInsurableValue,
 
     // Rate info
+    loss_cost_per_100: lossCostPer100,
+    lcm: config.lossCostMultiplier,
     base_rate_per_100: baseRatePer100,
     sprinklered,
 
