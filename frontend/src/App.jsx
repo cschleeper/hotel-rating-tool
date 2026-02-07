@@ -37,6 +37,7 @@ const EMPTY_PROPERTY = {
   litigation_environment: 'moderate',
   has_valet: false,
   has_bar_liquor: false,
+  has_resort_activities: false,
   confidence_level: '',
 };
 
@@ -105,6 +106,7 @@ export default function App() {
         litigation_environment: EMPTY_PROPERTY.litigation_environment,
         has_valet: EMPTY_PROPERTY.has_valet,
         has_bar_liquor: EMPTY_PROPERTY.has_bar_liquor,
+        has_resort_activities: EMPTY_PROPERTY.has_resort_activities,
       });
     } catch (err) {
       setSearchError(err.message);
@@ -174,6 +176,15 @@ export default function App() {
               <p className="text-sm text-navy-200 font-light">Insurance Rating & Analytics</p>
             </div>
           </div>
+          <div className="mt-2 text-sm text-navy-200">
+            <span className="font-medium text-white">Colin Schleeper</span>
+            <span className="mx-1 text-navy-300">—</span>
+            <span>Risk Advisor, Hospitality Division</span>
+            <span className="mx-2">|</span>
+            <a href="mailto:colin.schleeper@cbiz.com" className="hover:text-white transition-colors">colin.schleeper@cbiz.com</a>
+            <span className="mx-2">|</span>
+            <a href="tel:+16093372202" className="hover:text-white transition-colors">(609) 337-2202</a>
+          </div>
         </div>
       </header>
 
@@ -206,9 +217,14 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-navy-800 text-navy-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm">
-          <p>Hotel Property Intelligence & Insurance Rating Tool</p>
-          <p className="text-navy-300 mt-1">Estimates are for illustrative purposes only. Consult a licensed insurance professional for actual quotes.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm">
+          <p className="font-medium text-white text-center">Hotel Property Intelligence & Insurance Rating Tool</p>
+          <div className="mt-3 p-3 bg-navy-900/50 rounded-lg border border-navy-700">
+            <p className="text-xs text-navy-300 leading-relaxed">
+              <span className="font-semibold text-navy-200">Disclaimer:</span> This tool provides premium estimates for illustrative and educational purposes only, based on publicly available information and industry benchmarks. Actual insurance rates are determined by carriers and depend on many additional factors not captured here, including but not limited to: loss history and claims experience, specific policy terms and conditions, deductible selections, carrier underwriting guidelines, loss control inspections, financial strength of the insured, and current market conditions. This tool does not constitute a quote, binder, or offer of insurance. Consult a licensed insurance professional for actual coverage and pricing.
+            </p>
+          </div>
+          <p className="text-navy-400 text-xs text-center mt-3">Risk Advisor - Hospitality Division | Colin Schleeper | colin.schleeper@cbiz.com</p>
         </div>
       </footer>
     </div>

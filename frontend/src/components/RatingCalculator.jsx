@@ -21,24 +21,6 @@ function StatCard({ label, value, subtitle, color = 'navy' }) {
   );
 }
 
-function RiskGradeBadge({ grade }) {
-  const letter = grade?.charAt(0) || '?';
-  const colorMap = {
-    A: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    B: 'bg-blue-100 text-blue-800 border-blue-200',
-    C: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    D: 'bg-orange-100 text-orange-800 border-orange-200',
-    E: 'bg-red-100 text-red-800 border-red-200',
-  };
-
-  return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold ${colorMap[letter] || colorMap.C}`}>
-      <span className="text-lg">{letter}</span>
-      <span className="font-medium">{grade?.split(' - ')[1] || ''}</span>
-    </div>
-  );
-}
-
 export default function RatingCalculator({ rating, property }) {
   const [umbrellaDetailOpen, setUmbrellaDetailOpen] = useState(false);
 
@@ -65,7 +47,7 @@ export default function RatingCalculator({ rating, property }) {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Estimated Premium"
           value={formatCurrency(rating.total_estimated_premium)}
@@ -89,12 +71,6 @@ export default function RatingCalculator({ rating, property }) {
           subtitle={`${property.room_count || '—'} rooms`}
           color="green"
         />
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Grade</p>
-          <div className="mt-2">
-            <RiskGradeBadge grade={rating.risk_grade} />
-          </div>
-        </div>
       </div>
 
       {/* Detailed Breakdown */}
@@ -169,6 +145,9 @@ export default function RatingCalculator({ rating, property }) {
                   value={`${rating.geo_modifier.toFixed(2)}x`}
                 />
                 <FactorRow label="Protection Class Factor" value={`${rating.protection_class_factor.toFixed(2)}x`} />
+                {rating.brand_tier_multiplier > 1.00 && (
+                  <FactorRow label={`Brand Tier (${rating.brand_tier})`} value={`${rating.brand_tier_multiplier.toFixed(2)}x`} />
+                )}
                 {rating.location_type_factor !== 1.00 && (
                   <FactorRow label={`Location Type (${rating.location_type})`} value={`${rating.location_type_factor.toFixed(2)}x`} />
                 )}
@@ -191,6 +170,9 @@ export default function RatingCalculator({ rating, property }) {
                 )}
                 {rating.gl_liquor_component > 0 && (
                   <FactorRow label="Liquor GL" value={formatCurrency(rating.gl_liquor_component)} />
+                )}
+                {rating.gl_resort_activities_component > 0 && (
+                  <FactorRow label="Resort Activities GL" value={formatCurrency(rating.gl_resort_activities_component)} />
                 )}
               </div>
               <div className="pt-2 border-t border-slate-100">

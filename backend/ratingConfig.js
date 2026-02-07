@@ -244,6 +244,17 @@ const ratingConfig = {
 
   fullServiceTiers: ['luxury', 'upperUpscale', 'upscale'],
 
+  // Brand tier property rate multipliers — luxury and upper-upscale
+  // properties have significantly higher replacement costs and loss exposure.
+  brandTierPropertyMultiplier: {
+    luxury:       1.50,
+    upperUpscale: 1.25,
+    upscale:      1.00,
+    upperMidscale: 1.00,
+    midscale:     1.00,
+    economy:      1.00,
+  },
+
   // --------------------------------------------------------------------------
   // 6. GEOGRAPHIC MODIFIERS BY STATE
   // --------------------------------------------------------------------------
@@ -316,9 +327,9 @@ const ratingConfig = {
   buildingAgeModifiers: [
     { maxAge: 10,  modifier: 0.95, label: '0-10 years (new construction credit)' },
     { maxAge: 25,  modifier: 1.00, label: '11-25 years (standard)' },
-    { maxAge: 40,  modifier: 1.02, label: '26-40 years' },
-    { maxAge: 60,  modifier: 1.08, label: '41-60 years' },
-    { maxAge: 999, modifier: 1.15, label: '60+ years (outdated systems, code deficiencies)' },
+    { maxAge: 40,  modifier: 1.08, label: '26-40 years (aging systems, potential code upgrades)' },
+    { maxAge: 60,  modifier: 1.20, label: '41-60 years (outdated MEP, deferred maintenance)' },
+    { maxAge: 999, modifier: 1.35, label: '60+ years (major system deficiencies, code non-compliance)' },
   ],
 
   // --------------------------------------------------------------------------
@@ -377,6 +388,13 @@ const ratingConfig = {
     fbRevenuePercent:     0.13,
     // Liquor sales as % of F&B revenue
     liquorSalesPercent:   0.40,
+
+    // Resort activities GL surcharge (per $1,000 revenue) — applies when
+    // resort offers excursions, water sports, golf, kids programs, or other
+    // activities with elevated bodily injury exposure.
+    resortActivitiesRate: 18.50,
+    // Resort activities revenue as % of room revenue
+    resortActivitiesRevenuePercent: 0.08,
   },
 
   // Room revenue per room by service type (for GL basis — NOT total hotel revenue)
@@ -449,18 +467,7 @@ const ratingConfig = {
   },
 
   // --------------------------------------------------------------------------
-  // 15. RISK GRADE THRESHOLDS
-  // --------------------------------------------------------------------------
-  riskGradeThresholds: [
-    { maxPerRoom: 500,  grade: 'A', label: 'Excellent' },
-    { maxPerRoom: 750,  grade: 'B', label: 'Good' },
-    { maxPerRoom: 1000, grade: 'C', label: 'Average' },
-    { maxPerRoom: 1500, grade: 'D', label: 'Below Average' },
-    { maxPerRoom: Infinity, grade: 'E', label: 'Poor' },
-  ],
-
-  // --------------------------------------------------------------------------
-  // 16. COINSURANCE FACTORS
+  // 15. COINSURANCE FACTORS
   // --------------------------------------------------------------------------
   coinsuranceFactors: {
     80:  1.00,

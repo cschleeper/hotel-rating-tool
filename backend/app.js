@@ -318,6 +318,7 @@ function calculateInsuranceRating(property) {
     litigation_environment = 'moderate',
     has_valet = false,
     has_bar_liquor = false,
+    has_resort_activities = false,
   } = property;
 
   const currentYear = new Date().getFullYear();
@@ -414,9 +415,15 @@ function calculateInsuranceRating(property) {
     roofFactor *
     locationTypeFactor;
 
+  // --- Brand Tier Property Multiplier ---
+  // Luxury and upper-upscale properties carry significantly higher rates
+  const brandTierMultiplier = (brandTier && config.brandTierPropertyMultiplier[brandTier])
+    ? config.brandTierPropertyMultiplier[brandTier]
+    : 1.00;
+
   // --- Modified Rates by Coverage Type ---
   // Building uses base rate; Contents and BI use multiplied rates
-  const buildingModifiedRate = sprinklerAdjustedRate * modifierProduct;
+  const buildingModifiedRate = sprinklerAdjustedRate * modifierProduct * brandTierMultiplier;
   const contentsModifiedRate = buildingModifiedRate * config.contentsRateMultiplier;
   const biModifiedRate = buildingModifiedRate * config.biRateMultiplier;
 
@@ -458,6 +465,14 @@ function calculateInsuranceRating(property) {
     liquorGLComponent = Math.round((liquorSales / 1000) * config.glRates.liquorLiability);
 
     glPremium += restaurantGLComponent + liquorGLComponent;
+  }
+
+  // Resort activities GL surcharge (excursions, water sports, golf, kids programs)
+  let resortActivitiesGLComponent = 0;
+  if (has_resort_activities) {
+    const activitiesRevenue = estimatedRoomRevenue * config.glRates.resortActivitiesRevenuePercent;
+    resortActivitiesGLComponent = Math.round((activitiesRevenue / 1000) * config.glRates.resortActivitiesRate);
+    glPremium += resortActivitiesGLComponent;
   }
 
   // --- Umbrella / Excess (per-room pricing) ---
@@ -548,6 +563,8 @@ function calculateInsuranceRating(property) {
     named_storm_credit: namedStormCredit,
     location_type_factor: locationTypeFactor,
     location_zone_applied: locationZoneApplied,
+    brand_tier: brandTier,
+    brand_tier_multiplier: brandTierMultiplier,
 
     // Coastal exposure details
     is_coastal_state: isCoastalState,
@@ -565,6 +582,7 @@ function calculateInsuranceRating(property) {
     room_revenue_per_room: roomRevenuePerRoom,
     gl_restaurant_component: restaurantGLComponent,
     gl_liquor_component: liquorGLComponent,
+    gl_resort_activities_component: resortActivitiesGLComponent,
 
     // Premium components
     property_premium: propertyPremium,
@@ -580,9 +598,6 @@ function calculateInsuranceRating(property) {
     // Per-unit metrics
     premium_per_room: Math.round(totalPremium / (room_count || 1)),
     premium_per_sf: +(totalPremium / (square_footage || 1)).toFixed(2),
-
-    // Risk grade
-    risk_grade: getRiskGrade(totalPremium, room_count),
 
     // Market note
     market_note: config.marketNote,
@@ -741,14 +756,6 @@ function lookupBracket(brackets, value, field, thresholdKey = 'maxAge') {
     if (value <= bracket[thresholdKey]) return bracket[field];
   }
   return brackets[brackets.length - 1][field];
-}
-
-function getRiskGrade(totalPremium, roomCount) {
-  const perRoom = totalPremium / (roomCount || 1);
-  for (const tier of config.riskGradeThresholds) {
-    if (perRoom <= tier.maxPerRoom) return `${tier.grade} - ${tier.label}`;
-  }
-  return 'E - Poor';
 }
 
 export default app;

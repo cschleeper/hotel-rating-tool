@@ -492,7 +492,7 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
               </select>
             </div>
 
-            <div className="md:col-span-2 flex gap-6">
+            <div className="md:col-span-2 flex flex-wrap gap-4">
               <label className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${
                 property.has_valet
                   ? 'bg-navy-50 border-navy-300 text-navy-800'
@@ -519,6 +519,20 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
                   className="rounded border-slate-300 text-navy-800 focus:ring-navy-800/20"
                 />
                 <span>Has Bar / Liquor Service</span>
+              </label>
+
+              <label className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                property.has_resort_activities
+                  ? 'bg-navy-50 border-navy-300 text-navy-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={property.has_resort_activities || false}
+                  onChange={(e) => updateField('has_resort_activities', e.target.checked)}
+                  className="rounded border-slate-300 text-navy-800 focus:ring-navy-800/20"
+                />
+                <span>Resort Activities / Excursions</span>
               </label>
             </div>
           </div>
