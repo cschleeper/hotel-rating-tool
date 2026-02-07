@@ -102,7 +102,18 @@ Return a JSON object with these fields:
 - room_count (number)
 - stories (number — from LoopNet/CRE listings if available, otherwise best estimate)
 - year_built (number — from LoopNet/tax records if available)
-- construction_type (string — from LoopNet/CRE data if available, otherwise estimate from brand standards and age: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", or "Frame")
+- construction_type (string — one of: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", or "Frame". Determine using this priority hierarchy:
+  Priority 1 - Direct data: LoopNet, CoStar, or county records stating construction type. Look for terms: "steel frame," "concrete," "masonry," "wood frame," "tilt-up."
+  Priority 2 - Photo analysis: If photos show exterior cladding, visible structural elements, window frames, building shape — use these clues.
+  Priority 3 - Brand/building characteristics inference:
+    Fire Resistive (ISO 6): 5+ stories, steel frame with concrete/masonry exterior, hotels with atriums (Embassy Suites, Hyatt Regency, Marriott full-service), high-rise hotels, built after 1980 in major metros, concrete parking structures attached, dual atrium design.
+    Modified Fire Resistive (ISO 5): 4-6 stories, protected steel or concrete frame, some masonry exterior, mid-rise full service and select service.
+    Masonry Non-Combustible (ISO 4): 3-5 stories, masonry/brick exterior walls, steel bar joists or light steel frame, many select service hotels (Courtyard, Hilton Garden Inn).
+    Non-Combustible (ISO 3): 2-4 stories, metal frame, metal or masonry walls, some limited service hotels, concrete tilt-up construction.
+    Joisted Masonry (ISO 2): 2-3 stories, masonry walls with wood roof/floor, older motels, pre-1970 construction.
+    Frame (ISO 1): 1-3 stories, wood frame, extended stay, budget motels, residential-style hotels.
+  Default fallbacks if uncertain: Full service 5+ stories → Fire Resistive, Full service 3-4 stories → Modified Fire Resistive, Select service 4+ stories → Masonry Non-Combustible, Select service 2-3 stories → Non-Combustible, Limited service → Non-Combustible, Extended stay wood-frame → Frame.)
+- construction_type_source (string — "confirmed" if from LoopNet/CoStar/county records/photos, "estimated" if inferred from brand/building characteristics)
 - square_footage (number — MUST search LoopNet and county records first. Only estimate from brand prototype as last resort.)
 - sf_source (string — where the square footage data came from: "LoopNet", "county records", "CoStar", "CREXi", or "estimated from brand prototype - verify with actual data")
 - lot_size (number or null — lot size in acres if found on LoopNet or tax records)
@@ -171,7 +182,7 @@ Current estimates from text search: ${initialData.stories} stories, construction
 Analyze the building photo(s) above and return a JSON object with ONLY these fields:
 
 - stories (number)
-- construction_type (string — one of: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", "Frame")
+- construction_type (string — one of: "Fire Resistive", "Modified Fire Resistive", "Non-Combustible", "Masonry Non-Combustible", "Joisted Masonry", "Frame". Use visual clues to determine: concrete/steel visible = Fire Resistive or Modified Fire Resistive; brick/masonry walls with steel = Masonry Non-Combustible; metal panels/tilt-up = Non-Combustible; masonry with wood elements = Joisted Masonry; wood siding = Frame. Key indicators: 5+ story hotels with atriums or concrete parking are typically Fire Resistive. Look at window frames, cladding, and structural elements.)
 - roof_type (string — "flat", "pitched", "hip", "mansard", or "mixed")
 - exterior_material (string — what you see: "brick", "stucco", "EIFS", "glass curtain wall", "concrete", "metal panel", "wood siding", "stone veneer", etc.)
 - visible_amenities (object with booleans: pool, parking_structure, porte_cochere, solar_panels, outdoor_dining)

@@ -63,12 +63,12 @@ const ratingConfig = {
   // Non-sprinklered buildings receive a 60% surcharge on these rates.
   // --------------------------------------------------------------------------
   propertyBaseRates: {
-    'Frame':                      0.40,
-    'Joisted Masonry':            0.26,
-    'Non-Combustible':            0.17,
-    'Masonry Non-Combustible':    0.15,
-    'Modified Fire Resistive':    0.13,
-    'Fire Resistive':             0.12,
+    'Frame':                      0.38,
+    'Joisted Masonry':            0.24,
+    'Non-Combustible':            0.16,
+    'Masonry Non-Combustible':    0.14,
+    'Modified Fire Resistive':    0.125,
+    'Fire Resistive':             0.115,
   },
 
   // Contents and BI rate multipliers (applied on top of building base rate)
@@ -195,7 +195,7 @@ const ratingConfig = {
     },
     'Embassy Suites': {
       service_type: 'full-service',
-      construction: 'Masonry Non-Combustible',
+      construction: 'Fire Resistive',
       stories: 8,
       rooms: 220,
       amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
@@ -325,11 +325,11 @@ const ratingConfig = {
   // 8. BUILDING AGE MODIFIERS
   // --------------------------------------------------------------------------
   buildingAgeModifiers: [
-    { maxAge: 10,  modifier: 0.95, label: '0-10 years (new construction credit)' },
-    { maxAge: 25,  modifier: 1.00, label: '11-25 years (standard)' },
-    { maxAge: 40,  modifier: 1.08, label: '26-40 years (aging systems, potential code upgrades)' },
-    { maxAge: 60,  modifier: 1.20, label: '41-60 years (outdated MEP, deferred maintenance)' },
-    { maxAge: 999, modifier: 1.35, label: '60+ years (major system deficiencies, code non-compliance)' },
+    { maxAge: 10,  modifier: 1.00, label: '0-10 years (standard)' },
+    { maxAge: 20,  modifier: 1.03, label: '11-20 years' },
+    { maxAge: 30,  modifier: 1.06, label: '21-30 years' },
+    { maxAge: 40,  modifier: 1.10, label: '31-40 years' },
+    { maxAge: 999, modifier: 1.15, label: '40+ years' },
   ],
 
   // --------------------------------------------------------------------------
