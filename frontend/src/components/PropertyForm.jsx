@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const CONSTRUCTION_TYPES = [
   'Fire Resistive',
   'Modified Fire Resistive',
@@ -33,6 +35,11 @@ const AMENITY_LABELS = {
   meeting_space: 'Meeting Space',
 };
 
+// States that support location zone selection
+const TIERED_GEO_STATES = ['FL', 'TX', 'SC', 'NC', 'GA', 'AL', 'MS', 'LA'];
+// Only FL and TX have TWIA option
+const TWIA_STATES = ['FL', 'TX'];
+
 function ConfidenceBadge({ level }) {
   if (!level) return null;
 
@@ -64,6 +71,8 @@ function DataSourceBadges({ sources }) {
 }
 
 export default function PropertyForm({ property, onChange, onCalculate, onClear, isCalculating }) {
+  const [umbrellaOpen, setUmbrellaOpen] = useState(false);
+
   const updateField = (field, value) => {
     onChange({ ...property, [field]: value });
   };
@@ -76,6 +85,9 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
   };
 
   const hasData = property.property_name || property.full_address || property.room_count;
+  const stateUpper = (property.state || '').toUpperCase();
+  const showLocationZone = TIERED_GEO_STATES.includes(stateUpper);
+  const showTWIA = TWIA_STATES.includes(stateUpper);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -115,6 +127,34 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
             placeholder="e.g. Marriott, Hilton, Independent"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Service Type</label>
+          <select
+            value={property.service_type}
+            onChange={(e) => updateField('service_type', e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+          >
+            <option value="full-service">Full-Service Hotel</option>
+            <option value="select-service">Select-Service Hotel</option>
+            <option value="limited-service">Limited-Service Hotel</option>
+            <option value="extended-stay">Extended Stay</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Location Type</label>
+          <select
+            value={property.location_type}
+            onChange={(e) => updateField('location_type', e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+          >
+            <option value="urban">Urban</option>
+            <option value="suburban">Suburban</option>
+            <option value="rural">Rural</option>
+            <option value="resort-coastal">Resort / Coastal</option>
+          </select>
         </div>
 
         <div className="md:col-span-2">
@@ -239,6 +279,76 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
         </div>
       </div>
 
+      {/* Coastal Exposure */}
+      <div className="mt-6 pt-5 border-t border-slate-200">
+        <h3 className="text-sm font-medium text-slate-700 mb-3">Coastal & Flood Exposure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+          {showLocationZone && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Location Zone</label>
+              <select
+                value={property.location_zone}
+                onChange={(e) => updateField('location_zone', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+              >
+                <option value="inland">Inland</option>
+                <option value="coastal">Coastal</option>
+                {showTWIA && <option value="twia">TWIA Zone</option>}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Wind Tier</label>
+            <select
+              value={property.wind_tier}
+              onChange={(e) => updateField('wind_tier', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+            >
+              <option value="Inland">Inland (25+ miles)</option>
+              <option value="Tier 5">Tier 5 (10-25 miles)</option>
+              <option value="Tier 4">Tier 4 (5-10 miles)</option>
+              <option value="Tier 3">Tier 3 (1-5 miles)</option>
+              <option value="Tier 2">Tier 2 (1,000 ft - 1 mile)</option>
+              <option value="Tier 1">Tier 1 (Beachfront)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">FEMA Flood Zone</label>
+            <select
+              value={property.flood_zone}
+              onChange={(e) => updateField('flood_zone', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+            >
+              <option value="X">X — Minimal Risk</option>
+              <option value="X-shaded">X (shaded) — 500-Year</option>
+              <option value="AE">AE — 100-Year (SFHA)</option>
+              <option value="A">A — 100-Year, No BFE (SFHA)</option>
+              <option value="AH">AH — Shallow Flooding (SFHA)</option>
+              <option value="AO">AO — Sheet Flow (SFHA)</option>
+              <option value="VE">VE — Coastal High Hazard</option>
+              <option value="V">V — Coastal High Hazard, No BFE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Named Storm Deductible</label>
+            <select
+              value={property.named_storm_deductible}
+              onChange={(e) => updateField('named_storm_deductible', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+            >
+              <option value="1%">1% of TIV</option>
+              <option value="2%">2% of TIV (Standard)</option>
+              <option value="3%">3% of TIV</option>
+              <option value="5%">5% of TIV</option>
+              <option value="10%">10% of TIV</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Photo Analysis Results */}
       {property.photo_analysis && (
         <div className="mt-6 pt-5 border-t border-slate-200">
@@ -307,6 +417,112 @@ export default function PropertyForm({ property, onChange, onCalculate, onClear,
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Umbrella / Excess Liability — Collapsible */}
+      <div className="mt-6 pt-5 border-t border-slate-200">
+        <button
+          type="button"
+          onClick={() => setUmbrellaOpen(!umbrellaOpen)}
+          className="flex items-center gap-2 w-full text-left"
+        >
+          <svg
+            className={`w-4 h-4 text-slate-500 transition-transform ${umbrellaOpen ? 'rotate-90' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <h3 className="text-sm font-medium text-slate-700">Umbrella / Excess Liability</h3>
+        </button>
+
+        {umbrellaOpen && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Umbrella Limit</label>
+              <select
+                value={property.umbrella_limit}
+                onChange={(e) => updateField('umbrella_limit', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+              >
+                <option value="$10M">$10,000,000</option>
+                <option value="$25M">$25,000,000</option>
+                <option value="$50M">$50,000,000</option>
+                <option value="$100M">$100,000,000</option>
+                <option value="$125M">$125,000,000</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Self-Insured Retention (SIR)</label>
+              <select
+                value={property.umbrella_sir}
+                onChange={(e) => updateField('umbrella_sir', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+              >
+                <option value="$10K">$10,000</option>
+                <option value="$25K">$25,000</option>
+                <option value="$50K">$50,000</option>
+                <option value="$100K">$100,000</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Fleet Size (vehicles)</label>
+              <input
+                type="number"
+                value={property.fleet_size}
+                onChange={(e) => updateField('fleet_size', e.target.value)}
+                placeholder="0"
+                min="0"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Litigation Environment</label>
+              <select
+                value={property.litigation_environment}
+                onChange={(e) => updateField('litigation_environment', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-800/20 focus:border-navy-800 bg-white"
+              >
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+                <option value="very-high">Very High</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2 flex gap-6">
+              <label className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                property.has_valet
+                  ? 'bg-navy-50 border-navy-300 text-navy-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={property.has_valet || false}
+                  onChange={(e) => updateField('has_valet', e.target.checked)}
+                  className="rounded border-slate-300 text-navy-800 focus:ring-navy-800/20"
+                />
+                <span>Has Valet Parking</span>
+              </label>
+
+              <label className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                property.has_bar_liquor
+                  ? 'bg-navy-50 border-navy-300 text-navy-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={property.has_bar_liquor || false}
+                  onChange={(e) => updateField('has_bar_liquor', e.target.checked)}
+                  className="rounded border-slate-300 text-navy-800 focus:ring-navy-800/20"
+                />
+                <span>Has Bar / Liquor Service</span>
+              </label>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

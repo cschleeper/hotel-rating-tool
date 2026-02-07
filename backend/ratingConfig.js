@@ -4,374 +4,452 @@
 // All rating variables in one place. Edit values here to adjust premiums
 // across the entire application. No code changes needed elsewhere.
 //
+// MARKET POSITIONING:
+// These rates reflect competitive admitted market pricing.
+// E&S or distressed accounts may be 25-50% higher.
+//
 // SOURCES:
-//   - ISO Commercial Lines Manual (CLM) — Basic Group I class rated loss costs
-//   - NFSA (National Fire Sprinkler Assoc.) — ISO-sourced sprinkler vs. non-sprinkler sample rates
-//   - RSMeans 2019 base + cumulative cost index adjustment (~27% to 2025)
+//   - Market data and industry benchmarks (admitted carrier calibration)
+//   - ISO Commercial Lines Manual (CLM) — construction class relativities
+//   - NFSA (National Fire Sprinkler Assoc.) — sprinkler vs. non-sprinkler relativities
+//   - RSMeans 2025 construction cost data
 //   - HVS U.S. Hotel Development Cost Survey 2025
 //   - CBRE Hotels — Insurance Cost PAR benchmarks (2022-2024)
 //   - STR/CoStar — RevPAR, ADR, occupancy by chain scale (2024-2025)
-//   - Shepherd Insurance / NAIC — roof age surcharge data
+//   - NAIC — roof age surcharge data
 //   - ISO PPC (Public Protection Classification) relativities
 // ============================================================================
 
 const ratingConfig = {
 
   // --------------------------------------------------------------------------
-  // 1. BASE RATES PER $100 OF TIV BY CONSTRUCTION TYPE
+  // MARKET POSITIONING NOTE
   // --------------------------------------------------------------------------
-  // ISO loss costs for hotel/motel occupancy (class codes 0742-0747).
-  //
-  // NFSA published ISO-sourced sample rates for hotels:
-  //   Non-sprinklered building: $0.257 / $100
-  //   Sprinklered building:     $0.088 / $100  (66% reduction)
-  // These are at a mid-range construction type (approx. Masonry Non-Combustible).
-  //
-  // The rates below are ISO loss costs BEFORE the Loss Cost Multiplier (LCM).
-  // The LCM (section 1b) converts loss costs to final rates.
-  // Final rate = loss cost × LCM
-  //
-  // ISO Construction Classes:
-  //   Frame (ISO 1)                  - Wood frame, highest fire risk
-  //   Joisted Masonry (ISO 2)        - Masonry walls, wood roof/floor
-  //   Non-Combustible (ISO 3)        - Metal frame, metal/concrete walls
-  //   Masonry Non-Combustible (ISO 4) - Masonry walls, metal/concrete roof
-  //   Modified Fire Resistive (ISO 5) - Similar to 6 but lower rated assemblies
-  //   Fire Resistive (ISO 6)          - Concrete/steel, lowest fire risk
-  //
-  // Source: NFSA "Fire Sprinklers Save Lives and Money" (ISO sample data);
-  //         ISO CLM relativity between construction classes
+  marketNote: 'These rates reflect competitive admitted market pricing. ' +
+    'E&S or distressed accounts may be 25-50% higher.',
+
   // --------------------------------------------------------------------------
-  baseRatesPer100: {
-    // Sprinklered loss costs — ~66% credit from non-sprinklered per NFSA/ISO
-    sprinklered: {
-      'Frame':                      0.145,  // Highest risk even with sprinklers
-      'Joisted Masonry':            0.115,
-      'Non-Combustible':            0.080,
-      'Masonry Non-Combustible':    0.088,  // NFSA published rate
-      'Modified Fire Resistive':    0.068,
-      'Fire Resistive':             0.055,  // Lowest risk
+  // 1. SERVICE TYPE DEFINITIONS
+  // --------------------------------------------------------------------------
+  serviceTypes: {
+    'full-service': {
+      label: 'Full-Service Hotel',
+      description: 'Full food & beverage, meeting space, concierge, bell staff',
+      examples: 'Marriott, Hilton, Hyatt Regency, Sheraton, Embassy Suites',
     },
-    // Non-sprinklered loss costs
-    nonSprinklered: {
-      'Frame':                      0.425,  // ~3x sprinklered
-      'Joisted Masonry':            0.338,
-      'Non-Combustible':            0.235,
-      'Masonry Non-Combustible':    0.257,  // NFSA published rate
-      'Modified Fire Resistive':    0.200,
-      'Fire Resistive':             0.162,
+    'select-service': {
+      label: 'Select-Service Hotel',
+      description: 'Limited F&B (grab-and-go or breakfast only), fitness, pool',
+      examples: 'Courtyard, Hilton Garden Inn, Hyatt Place',
+    },
+    'limited-service': {
+      label: 'Limited-Service Hotel',
+      description: 'Minimal amenities, continental breakfast, basic fitness',
+      examples: 'Hampton Inn, Holiday Inn Express, La Quinta',
+    },
+    'extended-stay': {
+      label: 'Extended Stay',
+      description: 'In-room kitchenettes, weekly/monthly rates, limited daily housekeeping',
+      examples: 'Extended Stay America, TownePlace Suites, Candlewood Suites, Residence Inn',
     },
   },
 
   // --------------------------------------------------------------------------
-  // 1b. LOSS COST MULTIPLIER (LCM)
+  // 2. PROPERTY BASE RATES (per $100, sprinklered)
   // --------------------------------------------------------------------------
-  // Each carrier files their own LCM with the state DOI. It accounts for
-  // the carrier's expenses, profit, and contingencies on top of ISO loss costs.
-  //
-  // Typical range: 1.50 – 2.50
-  //   1.50 = very competitive / low-expense carrier
-  //   1.75 = average
-  //   2.00 = standard market
-  //   2.50 = specialty / E&S market
-  //
-  // Adjust this to match the carrier you're quoting against.
+  // These are BUILDING base rates. Contents and BI use multipliers on top.
+  //   Contents (BPP) rate = base rate × 1.68
+  //   Business Income rate = base rate × 1.38
+  // Non-sprinklered buildings receive a 60% surcharge on these rates.
   // --------------------------------------------------------------------------
-  lossCostMultiplier: 1.75,
+  propertyBaseRates: {
+    'Frame':                      0.40,
+    'Joisted Masonry':            0.26,
+    'Non-Combustible':            0.17,
+    'Masonry Non-Combustible':    0.15,
+    'Modified Fire Resistive':    0.13,
+    'Fire Resistive':             0.12,
+  },
 
-  // Default rate if construction type is not recognized
-  defaultBaseRate: 0.20,
+  // Contents and BI rate multipliers (applied on top of building base rate)
+  contentsRateMultiplier: 1.68,
+  biRateMultiplier: 1.38,
+
+  // Equipment breakdown — flat annual premium by service type
+  equipmentBreakdown: {
+    'full-service':     7500,
+    'select-service':   5000,
+    'limited-service':  3500,
+    'extended-stay':    4500,
+  },
+
+  nonSprinkleredSurcharge: 0.60,
 
   // --------------------------------------------------------------------------
-  // 2. GEOGRAPHIC MODIFIERS BY STATE
+  // 3. TIV (TOTAL INSURABLE VALUE) BY SERVICE TYPE — PER ROOM
   // --------------------------------------------------------------------------
-  // Multiplier applied to property premium based on state location.
-  // Accounts for catastrophe exposure (hurricane, earthquake, tornado, hail),
-  // litigation environment, regulatory costs, and local labor/material costs.
-  //
-  // Calibrated against state-level commercial property premium data:
-  //   NY: $6,200 avg | FL: $5,800 | CA: $5,600 | TX: $4,200 | OH: $4,300
-  //   (Source: Insuranceopedia 2024-2025 commercial property data)
-  //
-  // 1.00 = baseline (average state)
-  // >1.00 = higher risk / cost state
-  // <1.00 = lower risk / cost state
+  // All TIV components are calculated on a per-room basis.
+  // Building, Contents, and BI values by service type.
+  // --------------------------------------------------------------------------
+  tivMultipliers: {
+    buildingCostPerRoom: {
+      'full-service':     323000,
+      'select-service':   200000,
+      'limited-service':  150000,
+      'extended-stay':    175000,
+    },
+    defaultBuildingCostPerRoom: 323000,
+
+    contentsPerRoom: {
+      'full-service':     19000,
+      'select-service':   14000,
+      'limited-service':  10000,
+      'extended-stay':    16000,
+    },
+    defaultContentsPerRoom: 19000,
+
+    businessIncomePerRoom: {
+      'full-service':     24000,
+      'select-service':   18000,
+      'limited-service':  14000,
+      'extended-stay':    20000,
+    },
+    defaultBIPerRoom: 24000,
+  },
+
+  // --------------------------------------------------------------------------
+  // 4. BRAND LOOKUP TABLE
+  // --------------------------------------------------------------------------
+  // 14 brands with default property characteristics for auto-population.
+  // --------------------------------------------------------------------------
+  brandDefaults: {
+    'Marriott': {
+      service_type: 'full-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 8,
+      rooms: 300,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Hilton': {
+      service_type: 'full-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 8,
+      rooms: 280,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Hyatt': {
+      service_type: 'full-service',
+      construction: 'Fire Resistive',
+      stories: 10,
+      rooms: 300,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: true, business_center: true, meeting_space: true },
+    },
+    'IHG': {
+      service_type: 'full-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 6,
+      rooms: 250,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Wyndham': {
+      service_type: 'select-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 4,
+      rooms: 150,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: false },
+    },
+    'Choice': {
+      service_type: 'limited-service',
+      construction: 'Joisted Masonry',
+      stories: 3,
+      rooms: 100,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: false, meeting_space: false },
+    },
+    'Best Western': {
+      service_type: 'limited-service',
+      construction: 'Joisted Masonry',
+      stories: 3,
+      rooms: 80,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: false, meeting_space: false },
+    },
+    'La Quinta': {
+      service_type: 'limited-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 3,
+      rooms: 120,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: false },
+    },
+    'Extended Stay America': {
+      service_type: 'extended-stay',
+      construction: 'Non-Combustible',
+      stories: 3,
+      rooms: 120,
+      amenities: { pool: false, restaurant: false, fitness_center: true, spa: false, business_center: false, meeting_space: false },
+    },
+    'Residence Inn': {
+      service_type: 'extended-stay',
+      construction: 'Masonry Non-Combustible',
+      stories: 4,
+      rooms: 120,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Embassy Suites': {
+      service_type: 'full-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 8,
+      rooms: 220,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Hampton Inn': {
+      service_type: 'limited-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 4,
+      rooms: 120,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: false },
+    },
+    'Holiday Inn Express': {
+      service_type: 'limited-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 4,
+      rooms: 100,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: false },
+    },
+    'Courtyard by Marriott': {
+      service_type: 'select-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 4,
+      rooms: 150,
+      amenities: { pool: true, restaurant: true, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+    'Homewood Suites': {
+      service_type: 'full-service',
+      construction: 'Masonry Non-Combustible',
+      stories: 5,
+      rooms: 130,
+      amenities: { pool: true, restaurant: false, fitness_center: true, spa: false, business_center: true, meeting_space: true },
+    },
+  },
+
+  // --------------------------------------------------------------------------
+  // 5. BRAND TIER CLASSIFICATION
+  // --------------------------------------------------------------------------
+  brandTier: {
+    luxury: ['Ritz-Carlton', 'Four Seasons', 'St. Regis', 'Waldorf Astoria', 'Park Hyatt', 'Mandarin Oriental', 'Peninsula', 'Rosewood', 'Aman', 'Montage', 'Auberge'],
+    upperUpscale: ['JW Marriott', 'W Hotels', 'Westin', 'Grand Hyatt', 'Conrad', 'InterContinental', 'Kimpton', 'Loews', 'Omni'],
+    upscale: ['Marriott', 'Hilton', 'Hyatt Regency', 'Sheraton', 'Renaissance', 'Autograph Collection', 'Curio', 'Tribute'],
+    upperMidscale: ['Courtyard', 'Hilton Garden Inn', 'Hampton Inn', 'Hyatt Place', 'Holiday Inn', 'Crowne Plaza', 'Best Western Plus'],
+    midscale: ['La Quinta', 'Best Western', 'Wyndham', 'Ramada', 'Radisson', 'Country Inn'],
+    economy: ['Comfort Inn', 'Quality Inn', 'Days Inn', 'Super 8', 'Motel 6', 'Red Roof Inn', 'Econo Lodge', 'Microtel'],
+  },
+
+  fullServiceTiers: ['luxury', 'upperUpscale', 'upscale'],
+
+  // --------------------------------------------------------------------------
+  // 6. GEOGRAPHIC MODIFIERS BY STATE
+  // --------------------------------------------------------------------------
+  // PA = 1.0 baseline. All other states relative to PA.
+  // FL and TX use 3-tier structure (inland/coastal/TWIA).
+  // SE coastal states (SC, NC, GA, AL, MS, LA) use inland/coastal split.
   // --------------------------------------------------------------------------
   geographicModifiers: {
-    'AL': 1.15,   // Alabama — hurricane, tornado
-    'AK': 1.10,   // Alaska — remote, high construction costs
-    'AZ': 0.90,   // Arizona — low cat exposure
-    'AR': 1.05,   // Arkansas — tornado alley fringe
-    'CA': 1.30,   // California — earthquake, wildfire, litigation ($5,600 avg)
-    'CO': 1.00,   // Colorado — hail exposure
-    'CT': 1.05,   // Connecticut
-    'DE': 1.00,   // Delaware
-    'FL': 1.45,   // Florida — hurricane, sinkhole, assignment of benefits litigation ($5,800 avg)
-    'GA': 1.10,   // Georgia — hurricane fringe ($4,700 avg)
-    'HI': 1.20,   // Hawaii — hurricane, remote, high material costs
-    'ID': 0.85,   // Idaho — low cat
-    'IL': 1.08,   // Illinois — tornado ($4,900 avg)
-    'IN': 1.00,   // Indiana
-    'IA': 1.00,   // Iowa — tornado, hail
-    'KS': 1.10,   // Kansas — tornado, hail
-    'KY': 0.95,   // Kentucky
-    'LA': 1.40,   // Louisiana — hurricane, flood, nuclear verdicts
-    'ME': 0.90,   // Maine
-    'MD': 1.05,   // Maryland
-    'MA': 1.10,   // Massachusetts — nor'easter
-    'MI': 0.95,   // Michigan
-    'MN': 0.95,   // Minnesota
-    'MS': 1.20,   // Mississippi — hurricane
-    'MO': 1.05,   // Missouri — tornado, nuclear verdicts
-    'MT': 0.85,   // Montana
-    'NE': 1.00,   // Nebraska — hail
-    'NV': 0.85,   // Nevada — low cat
-    'NH': 0.90,   // New Hampshire
-    'NJ': 1.12,   // New Jersey — nor'easter, coastal, high costs
-    'NM': 0.85,   // New Mexico
-    'NY': 1.38,   // New York — nor'easter, highest avg premium ($6,200 avg)
-    'NC': 1.15,   // North Carolina — hurricane ($4,400 avg)
-    'ND': 0.90,   // North Dakota
-    'OH': 0.95,   // Ohio ($4,300 avg)
-    'OK': 1.15,   // Oklahoma — tornado, hail
-    'OR': 0.95,   // Oregon — earthquake risk
-    'PA': 1.05,   // Pennsylvania ($4,800 avg)
-    'RI': 1.05,   // Rhode Island
-    'SC': 1.20,   // South Carolina — hurricane
-    'SD': 0.90,   // South Dakota
-    'TN': 1.00,   // Tennessee
-    'TX': 1.25,   // Texas — hurricane coast, tornado, hail, litigation ($4,200 avg but high cat)
-    'UT': 0.85,   // Utah
-    'VT': 0.90,   // Vermont
-    'VA': 1.05,   // Virginia — hurricane fringe
-    'WA': 1.05,   // Washington — earthquake risk ($5,100 avg)
-    'WV': 0.90,   // West Virginia
-    'WI': 0.95,   // Wisconsin
-    'WY': 0.85,   // Wyoming
-    'DC': 1.10,   // District of Columbia
+    // Midwest / Mid-Atlantic baseline (1.0)
+    'PA': 1.00,  'OH': 1.00,  'MI': 1.00,  'IN': 1.00,
+    'WI': 1.00,  'MN': 1.00,  'IL': 1.00,
+
+    // Northeast (1.15)
+    'NY': 1.15,  'NJ': 1.15,  'CT': 1.15,  'MA': 1.15,
+
+    // High-CAT states — use inland value as base
+    'FL': 1.45,
+    'TX': 1.10,
+    'CA': 1.60,
+
+    // Southeast — inland values
+    'GA': 1.20,  'SC': 1.20,  'NC': 1.20,
+    'AL': 1.30,  'MS': 1.30,  'LA': 1.50,
+
+    // Other states
+    'AK': 1.20,  'AZ': 0.90,  'AR': 1.10,  'CO': 1.00,
+    'DE': 1.00,  'DC': 1.10,  'HI': 1.40,  'ID': 0.85,
+    'IA': 1.00,  'KS': 1.10,  'KY': 0.95,  'ME': 0.90,
+    'MD': 1.05,  'MO': 1.10,  'MT': 0.85,  'NE': 1.00,
+    'NV': 0.90,  'NH': 0.95,  'NM': 0.85,  'ND': 0.90,
+    'OK': 1.15,  'OR': 0.95,  'RI': 1.10,  'SD': 0.90,
+    'TN': 1.00,  'UT': 0.85,  'VT': 0.90,  'VA': 1.05,
+    'WA': 1.05,  'WV': 0.90,  'WY': 0.85,
   },
 
-  // Fallback if state is not found or not provided
+  // 3-tier geo modifiers for FL and TX (inland/coastal/TWIA)
+  geoModifierTiers: {
+    'FL': { inland: 1.45, coastal: 1.75, twia: 2.10 },
+    'TX': { inland: 1.10, coastal: 1.40, twia: 1.70 },
+  },
+
+  // 2-tier geo modifiers for SE coastal states (inland/coastal)
+  coastalGeoOverrides: {
+    'SC': { inland: 1.20, coastal: 1.50 },
+    'NC': { inland: 1.20, coastal: 1.50 },
+    'GA': { inland: 1.20, coastal: 1.50 },
+    'AL': { inland: 1.30, coastal: 1.60 },
+    'MS': { inland: 1.30, coastal: 1.60 },
+    'LA': { inland: 1.50, coastal: 1.80 },
+  },
+
   defaultGeoModifier: 1.00,
 
+  // States that support location_zone selection
+  tieredGeoStates: ['FL', 'TX', 'SC', 'NC', 'GA', 'AL', 'MS', 'LA'],
+
   // --------------------------------------------------------------------------
-  // 3. ROOF AGE MODIFIERS
+  // 7. LOCATION TYPE MODIFIERS
   // --------------------------------------------------------------------------
-  // Older roofs are the #1 source of property claims in hospitality.
-  // Roof condition directly impacts water damage and wind peril pricing.
-  //
-  // Industry data (Shepherd Insurance / NAIC / carrier guidelines):
-  //   0-14 years:  Standard rates, full replacement cost coverage
-  //   15-19 years: 10-20% surcharge on most standard policies
-  //   20-24 years: ~70% of carriers switch from RC to ACV; significant surcharge
-  //   25+ years:   ~40% of standard carriers refuse renewal; specialty market
-  //
-  // Moody's RMS: older roofs contribute up to 50% more damage in hurricane events.
+  locationTypeModifiers: {
+    'urban':          1.05,
+    'suburban':       1.00,
+    'rural':          0.95,
+    'resort-coastal': 1.10,
+  },
+
   // --------------------------------------------------------------------------
-  roofAgeModifiers: [
-    { maxAge: 5,   modifier: 0.90, label: '0–5 years (excellent — new roof credit)' },
-    { maxAge: 10,  modifier: 0.95, label: '6–10 years (good)' },
-    { maxAge: 14,  modifier: 1.00, label: '11–14 years (standard)' },
-    { maxAge: 19,  modifier: 1.15, label: '15–19 years (10-20% surcharge per NAIC)' },
-    { maxAge: 24,  modifier: 1.35, label: '20–24 years (many carriers move to ACV)' },
-    { maxAge: 999, modifier: 1.50, label: '25+ years (specialty market — inspection required)' },
+  // 8. BUILDING AGE MODIFIERS
+  // --------------------------------------------------------------------------
+  buildingAgeModifiers: [
+    { maxAge: 10,  modifier: 0.95, label: '0-10 years (new construction credit)' },
+    { maxAge: 25,  modifier: 1.00, label: '11-25 years (standard)' },
+    { maxAge: 40,  modifier: 1.02, label: '26-40 years' },
+    { maxAge: 60,  modifier: 1.08, label: '41-60 years' },
+    { maxAge: 999, modifier: 1.15, label: '60+ years (outdated systems, code deficiencies)' },
   ],
 
   // --------------------------------------------------------------------------
-  // 4. PROTECTION CLASS MODIFIERS
+  // 9. ROOF AGE MODIFIERS
   // --------------------------------------------------------------------------
-  // ISO Public Protection Classification (PPC) grades from 1 (best) to 10.
-  // Based on fire department capability, water supply, and emergency comms.
-  //
-  // ISO CLM typically bases loss costs at PC 5, with multipliers adjusting
-  // up or down. Most urban hotels are class 1–4. Class 10 = unprotected
-  // (many carriers will not write PC 8B-10 at all).
-  //
-  // Source: ISO CLM state exception pages (directional; exact tables proprietary)
+  roofAgeModifiers: [
+    { maxAge: 5,   modifier: 0.95, label: '0-5 years (new roof credit)' },
+    { maxAge: 10,  modifier: 1.00, label: '6-10 years (standard)' },
+    { maxAge: 15,  modifier: 1.05, label: '11-15 years' },
+    { maxAge: 20,  modifier: 1.10, label: '16-20 years (surcharge per industry data)' },
+    { maxAge: 999, modifier: 1.20, label: '20+ years (many carriers move to ACV)' },
+  ],
+
+  // --------------------------------------------------------------------------
+  // 10. PROTECTION CLASS MODIFIERS
   // --------------------------------------------------------------------------
   protectionClassModifiers: {
-    1:  0.80,   // Superior — major metro, full-time paid FD, excellent water
-    2:  0.85,
-    3:  0.90,
-    4:  0.95,
-    5:  1.00,   // Baseline — ISO CLM base in most states
-    6:  1.10,
-    7:  1.20,
-    8:  1.35,   // Semi-rural — volunteer FD, limited water
-    9:  1.55,   // Rural — distant FD, poor water supply
-    10: 1.80,   // Unprotected — most carriers decline
+    1:  0.95,
+    2:  0.95,
+    3:  0.95,
+    4:  1.00,
+    5:  1.00,
+    6:  1.00,
+    7:  1.10,
+    8:  1.10,
+    9:  1.20,
+    10: 1.35,
   },
 
-  // Default if protection class is not provided (urban hotel assumption)
   defaultProtectionClass: 4,
 
   // --------------------------------------------------------------------------
-  // 5. AMENITY MODIFIERS
-  // --------------------------------------------------------------------------
-  // Each amenity adds incremental GL and/or property risk exposure.
-  // These are additive — e.g., pool (0.08) + restaurant (0.06) = 1.14x.
-  // Applied as a multiplier on the general liability premium.
-  //
-  // ISO CGL class codes differentiate hotels with/without pools:
-  //   45190: Hotels <4 stories, WITH pools/beaches
-  //   45191: Hotels 4+ stories, WITH pools/beaches
-  //   45192: Hotels <4 stories, WITHOUT pools/beaches
-  //   45193: Hotels 4+ stories, WITHOUT pools/beaches
-  //
-  // Adjust these based on your book's actual loss experience.
-  // --------------------------------------------------------------------------
-  amenityModifiers: {
-    pool:            0.08,   // Drowning / slip-and-fall — ISO splits class on this
-    restaurant:      0.06,   // Food contamination, grease fire, liquor exposure
-    spa:             0.05,   // Burns, allergic reactions, slip-and-fall
-    fitness_center:  0.03,   // Equipment injury
-    meeting_space:   0.04,   // Higher occupancy / crowd exposure
-    business_center: 0.02,   // Minimal added risk
-  },
-
-  // --------------------------------------------------------------------------
-  // 6. BUILDING AGE MODIFIERS
-  // --------------------------------------------------------------------------
-  // Older buildings have outdated electrical, plumbing, and HVAC systems
-  // that increase fire and water damage frequency.
-  //
-  // NAIC data: buildings >50 years face premiums 10-20% higher.
-  // Applied to property premium.
-  // --------------------------------------------------------------------------
-  buildingAgeModifiers: [
-    { maxAge: 5,   modifier: 0.95, label: '0–5 years (new construction)' },
-    { maxAge: 15,  modifier: 1.00, label: '6–15 years (modern)' },
-    { maxAge: 30,  modifier: 1.10, label: '16–30 years' },
-    { maxAge: 50,  modifier: 1.20, label: '31–50 years (10-20% surcharge per NAIC)' },
-    { maxAge: 999, modifier: 1.35, label: '50+ years (outdated systems, code deficiencies)' },
-  ],
-
-  // --------------------------------------------------------------------------
-  // 7. STORIES MODIFIERS
-  // --------------------------------------------------------------------------
-  // Taller buildings present greater fire suppression difficulty,
-  // higher evacuation risk, and increased wind exposure at upper floors.
-  // ISO rates hotels 4+ stories differently from <4 stories (separate GL codes).
+  // 11. STORIES MODIFIERS
   // --------------------------------------------------------------------------
   storiesModifiers: [
-    { maxStories: 3,   modifier: 1.00, label: '1–3 stories (ISO <4 story class)' },
-    { maxStories: 5,   modifier: 1.05, label: '4–5 stories' },
-    { maxStories: 10,  modifier: 1.15, label: '6–10 stories' },
-    { maxStories: 20,  modifier: 1.25, label: '11–20 stories' },
-    { maxStories: 999, modifier: 1.35, label: '20+ stories (high-rise)' },
+    { maxStories: 5,   modifier: 1.00, label: '1-5 stories' },
+    { maxStories: 10,  modifier: 1.00, label: '6-10 stories' },
+    { maxStories: 20,  modifier: 1.05, label: '11-20 stories' },
+    { maxStories: 999, modifier: 1.10, label: '20+ stories (high-rise)' },
   ],
 
   // --------------------------------------------------------------------------
-  // 8. TIV (TOTAL INSURABLE VALUE) MULTIPLIERS
+  // 12. GL RATES (per $1,000 revenue)
   // --------------------------------------------------------------------------
-  // Used to estimate replacement cost when actual appraisal is not available.
-  //
-  // BUILDING COST PER SF:
-  //   Source: RSMeans 2019 base data + ~27% cumulative cost index to 2025
-  //   Hotel 4-7 story (brick/RC, 135,000 SF model):
-  //     Union: $197/SF → 2025 adjusted: ~$250/SF
-  //     Open shop: $181/SF → 2025 adjusted: ~$230/SF
-  //   Hotel 8-24 story (brick/RC, 450,000 SF model):
-  //     Union: $212/SF → 2025 adjusted: ~$269/SF
-  //     Open shop: $195/SF → 2025 adjusted: ~$247/SF
-  //
-  //   Also calibrated against HVS 2025 cost-per-key data:
-  //     Economy: $134-$234/SF | Midscale: $175-$282/SF
-  //     Select-service: $200-$350/SF | Full-service: $260-$410/SF
-  //     Luxury: $332-$550+/SF
-  //
-  // CONTENTS (FF&E) PER ROOM:
-  //   Source: HVS 2025, Artone industry benchmarks
-  //     Economy:        $4,500 – $7,000/room
-  //     Midscale:       $4,500 – $8,500/room
-  //     Upscale:        $12,000 – $35,000/room
-  //     Upper Upscale:  $25,000 – $45,000/room
-  //     Luxury:         $35,000 – $65,000/room
-  //   FF&E = 7-10% of total construction costs; 10-15% above historical as of 2025
-  //
-  // BUSINESS INCOME PER ROOM:
-  //   Source: STR/CoStar 2024-2025
-  //     U.S. avg ADR: $159.58 | Avg occupancy: 63% | RevPAR: $102.78
-  //     BI/room/year = ADR × occupancy × 365
-  //     $159.58 × 0.63 × 365 ≈ $36,700/room/year
+  // GL is applied to ROOM REVENUE only (not total hotel revenue).
+  // Restaurant and liquor liability are calculated separately on F&B revenue
+  // but included in the total GL premium as a single line item.
   // --------------------------------------------------------------------------
-  tivMultipliers: {
-    // Replacement cost per SF by construction type (2025 RSMeans adjusted)
-    buildingCostPerSF: {
-      'Frame':                      180,   // Wood frame, lowest cost
-      'Joisted Masonry':            215,   // Masonry walls + wood internals
-      'Non-Combustible':            245,   // Metal/concrete
-      'Masonry Non-Combustible':    235,   // Masonry + concrete/metal roof
-      'Modified Fire Resistive':    260,   // Near fire-resistive specs
-      'Fire Resistive':             275,   // Concrete/steel, highest cost
+  glRates: {
+    hotelWithPool:        9.50,
+    hotelWithoutPool:     6.50,
+    restaurantWithLiquor: 13.50,
+    liquorLiability:      48.00,
+
+    // F&B revenue as % of room revenue (for restaurant/liquor GL)
+    fbRevenuePercent:     0.13,
+    // Liquor sales as % of F&B revenue
+    liquorSalesPercent:   0.40,
+  },
+
+  // Room revenue per room by service type (for GL basis — NOT total hotel revenue)
+  roomRevenuePerRoom: {
+    'full-service':     33500,
+    'select-service':   22000,
+    'limited-service':  16000,
+    'extended-stay':    18000,
+  },
+  defaultRoomRevenuePerRoom: 33500,
+
+  // --------------------------------------------------------------------------
+  // 13. UMBRELLA / EXCESS LIABILITY
+  // --------------------------------------------------------------------------
+  // Per-room base rates by limit tier, plus amenity surcharges.
+  // If bar/liquor is checked, it replaces (not stacks with) restaurant surcharge.
+  // --------------------------------------------------------------------------
+  umbrella: {
+    // Per-room base rates by limit tier
+    limitTiers: {
+      '$10M':  { perRoom: 150, label: '$10M Umbrella' },
+      '$25M':  { perRoom: 200, label: '$25M Umbrella' },
+      '$50M':  { perRoom: 220, label: '$50M Umbrella' },
+      '$100M': { perRoom: 'incremental', baseLimit: '$50M', incrementalPerRoom: 65, label: '$100M Umbrella' },
+      '$125M': { perRoom: 'incremental', baseLimit: '$100M', incrementalPerRoom: 10, label: '$125M Umbrella' },
     },
 
-    // Default if construction type not matched
-    defaultBuildingCostPerSF: 235,
+    // Amenity surcharges (per room)
+    // Note: bar_liquor replaces restaurant surcharge (don't double-count)
+    amenitySurcharges: {
+      pool:       25,
+      restaurant: 35,
+      bar_liquor: 45,
+      valet:      15,
+    },
 
-    // FF&E contents value per guest room (midscale default)
-    // Adjust for hotel tier:
-    //   Economy: $5,500 | Midscale: $8,000 | Select-service: $15,000
-    //   Upscale: $25,000 | Upper Upscale: $35,000 | Luxury: $55,000
-    contentsPerRoom: 15000,
+    // Geographic litigation environment modifiers
+    litigationModifiers: {
+      'low':       0.90,
+      'moderate':  1.00,
+      'high':      1.15,
+      'very-high': 1.25,
+    },
 
-    // Annual business income estimate per room
-    // U.S. avg: ADR $159.58 × 63% occupancy × 365 = ~$36,700/room/year
-    // Source: STR YTD 2025
-    businessIncomePerRoom: 36700,
-
-    // Age adjustment to building replacement cost
-    // Newer buildings cost more to replace due to current code requirements
-    // and modern material/labor costs
-    ageAdjustments: [
-      { maxAge: 5,   multiplier: 1.15, label: 'New construction — current code premium' },
-      { maxAge: 15,  multiplier: 1.05, label: 'Modern construction' },
-      { maxAge: 40,  multiplier: 1.00, label: 'Standard' },
-      { maxAge: 999, multiplier: 0.90, label: 'Older — may have lower material specs' },
+    // Fleet size modifiers
+    fleetModifiers: [
+      { maxVehicles: 5,   modifier: 1.00, label: '1-5 vehicles (base)' },
+      { maxVehicles: 15,  modifier: 1.05, label: '6-15 vehicles (+5%)' },
+      { maxVehicles: 999, modifier: 1.10, label: '16+ vehicles (+10%)' },
     ],
+
+    // Self-insured retention (SIR) discounts
+    sirOptions: {
+      '$10K':  1.05,
+      '$25K':  1.00,
+      '$50K':  0.90,
+      '$100K': 0.80,
+    },
   },
 
   // --------------------------------------------------------------------------
-  // 9. LIABILITY RATES
+  // 14. WARNING THRESHOLDS
   // --------------------------------------------------------------------------
-  // Per-room rates for general liability and liquor liability premiums.
-  //
-  // GL: ISO CGL codes 45190-45193 rate per room (non-auditable).
-  //   Industry avg GL premium: ~$720/year for typical hotel
-  //   State variation: CA $1,120 | NY $1,180 | TX $1,050 | FL $1,090
-  //   Per-room rate calibrated to produce realistic premiums for 100+ room hotels.
-  //
-  // LIQUOR LIABILITY:
-  //   Avg hotel liquor liability: ~$612/year (Source: Insuranceopedia 2025)
-  //   State highs: NV $3,250 | WA $3,200 | LA $3,180 | MA $3,120
-  //   Per-room rate is a simplified proxy; actual rating uses alcohol revenue.
-  //   Past liquor claims can increase premiums 300-400%.
-  //
-  // UMBRELLA/EXCESS:
-  //   Trending up: +9.5% in Q1 2025, +8.7% in Q4 2024.
-  //   Priced as % of underlying property + GL.
-  // --------------------------------------------------------------------------
-  liabilityRates: {
-    // General liability base rate per room per year
-    glPerRoom: 125,
-
-    // Liquor liability rate per room (only applies if restaurant/bar present)
-    liquorPerRoom: 40,
-
-    // Umbrella/excess as a percentage of combined property + GL premium
-    umbrellaFactor: 0.15,
+  warningThresholds: {
+    catZoneStates: ['FL', 'TX', 'LA', 'MS', 'AL', 'SC', 'NC', 'GA', 'CA', 'HI'],
+    oldRoofAge: 15,
+    highPPC: 8,
+    highTIV: 50000000,
+    nonSprinkleredWarning: true,
   },
 
   // --------------------------------------------------------------------------
-  // 10. RISK GRADE THRESHOLDS
-  // --------------------------------------------------------------------------
-  // Risk grade based on total premium per room for underwriting triage.
-  //
-  // Benchmarked against CBRE insurance cost PAR data:
-  //   Limited-service:  $528 PAR (2022)
-  //   All hotels avg:   $939 PAR (2022)
-  //   Resort:           $2,464 PAR (2022)
-  //   Insurance = ~1.7% of total hotel revenue (2023-2024)
+  // 15. RISK GRADE THRESHOLDS
   // --------------------------------------------------------------------------
   riskGradeThresholds: [
     { maxPerRoom: 500,  grade: 'A', label: 'Excellent' },
@@ -382,18 +460,76 @@ const ratingConfig = {
   ],
 
   // --------------------------------------------------------------------------
-  // 11. COINSURANCE FACTORS
-  // --------------------------------------------------------------------------
-  // ISO coinsurance relativity factors. Most hotel policies are written at
-  // 80% or 90% coinsurance. Agreed Value eliminates coinsurance penalty.
-  //
-  // Source: ISO CLM
+  // 16. COINSURANCE FACTORS
   // --------------------------------------------------------------------------
   coinsuranceFactors: {
-    80:  1.00,   // Baseline
-    90:  0.95,   // 5% credit for higher coinsurance
-    100: 0.90,   // 10% credit
-    0:   1.50,   // No coinsurance — 50% surcharge
+    80:  1.00,
+    90:  0.95,
+    100: 0.90,
+    0:   1.50,
+  },
+
+  // --------------------------------------------------------------------------
+  // 17. COASTAL / WIND EXPOSURE
+  // --------------------------------------------------------------------------
+  windTierModifiers: {
+    'Inland':  1.00,
+    'Tier 5':  1.10,
+    'Tier 4':  1.25,
+    'Tier 3':  1.60,
+    'Tier 2':  2.25,
+    'Tier 1':  3.25,
+  },
+
+  coastalStates: [
+    'FL', 'TX', 'LA', 'MS', 'AL',
+    'SC', 'NC', 'GA', 'VA',
+    'NY', 'NJ', 'CT', 'RI', 'MA', 'NH', 'ME',
+    'DE', 'MD', 'DC',
+    'HI',
+  ],
+
+  // --------------------------------------------------------------------------
+  // 18. FLOOD ZONE MODIFIERS
+  // --------------------------------------------------------------------------
+  floodZoneModifiers: {
+    'X':          1.00,
+    'X-shaded':   1.05,
+    'AE':         1.15,
+    'A':          1.20,
+    'AH':         1.15,
+    'AO':         1.15,
+    'VE':         1.35,
+    'V':          1.40,
+  },
+
+  defaultFloodZone: 'X',
+
+  // --------------------------------------------------------------------------
+  // 19. NAMED STORM / WIND-HAIL DEDUCTIBLE CREDITS
+  // --------------------------------------------------------------------------
+  namedStormDeductibleCredits: {
+    '1%':  1.10,
+    '2%':  1.00,
+    '3%':  0.90,
+    '5%':  0.80,
+    '10%': 0.65,
+  },
+
+  defaultNamedStormDeductible: '2%',
+
+  // --------------------------------------------------------------------------
+  // 20. ESTIMATED ANNUAL FLOOD INSURANCE PREMIUM
+  // --------------------------------------------------------------------------
+  floodInsuranceEstimates: {
+    'X':          0,
+    'X-shaded':   2500,
+    'AE':         15000,
+    'A':          20000,
+    'AH':         12000,
+    'AO':         12000,
+    'VE':         45000,
+    'V':          55000,
   },
 };
 
